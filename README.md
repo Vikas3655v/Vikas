@@ -1,70 +1,53 @@
-# 💻 Vikas — Software Development & AI/ML Practice
+# 💻 Vikas — Software Development & AI/ML Portfolio Workspace
 
-A focused learning and project repository documenting my journey as an **Information Technology graduate**, with practical work in **Python, Java, Data Structures & Algorithms, AI/ML, data analytics, and software development**.
+A focused repository for **real, reviewable software and AI/ML work** covering Python, Java, DSA, computer vision, data analytics and application development.
 
-## 🎯 What You'll Find Here
+## 🧭 Current Projects
 
-- 🐍 Python programming and problem solving
-- ☕ Java and Object-Oriented Programming
-- 🧠 Data Structures & Algorithms
-- 🤖 Machine Learning experiments
-- 📊 Data analytics and visualization
-- 🌐 Web development experiments
-- 🧪 Testing and debugging practice
-- ♻️ Refactoring and clean-code improvements
-- 📝 Technical notes and documentation
+| Project | Focus | Status |
+|---|---|---|
+| [Library Management System](projects/library-management-system/) | Java, OOP, Maven, JUnit | Implemented baseline |
+| [Plant Disease Recognition](projects/plant-disease-recognition/) | TensorFlow, CNN, image classification | Implemented baseline; needs dataset run/evaluation |
+| [Object Detection & Activity Recognition](projects/object-detection-activity-recognition/) | YOLO, OpenCV, video inference | Detection pipeline implemented; activity module is future work |
+| [Smart Retail Surveillance](projects/smart-retail-surveillance/) | Detection events, explainable recommendations | Prototype implemented |
+| [Counter-Drone Local Network Monitoring](projects/counter-drone-local-network/) | Telemetry anomaly detection | Defensive monitoring prototype |
 
-## 🗂️ Planned Structure
+## 🧪 Engineering Practice
+
+- Python and Java programming
+- Data Structures & Algorithms
+- Unit testing and validation
+- Debugging and refactoring
+- Dependency management
+- Clear project documentation
+- Reproducible AI/ML experiments
+
+## 🗂️ Repository Structure
 
 ```text
 Vikas/
 ├── python/
-│   ├── basics/
-│   ├── algorithms/
-│   └── projects/
-├── java/
-│   ├── basics/
-│   ├── oop/
-│   └── dsa/
-├── dsa/
-│   ├── arrays/
-│   ├── strings/
-│   ├── linked-lists/
-│   ├── stacks-queues/
-│   ├── trees/
-│   └── graphs/
-├── ai-ml/
-│   ├── experiments/
-│   └── notebooks/
-├── data-analytics/
-├── web-development/
+│   └── algorithms/
 ├── tests/
-└── docs/
+├── projects/
+│   ├── library-management-system/
+│   ├── plant-disease-recognition/
+│   ├── object-detection-activity-recognition/
+│   ├── smart-retail-surveillance/
+│   └── counter-drone-local-network/
+└── README.md
 ```
 
-## 🧭 Engineering Approach
+## 🔐 Data & Secrets
 
-I use this repository to turn learning into **real, reviewable work**. Each meaningful change should ideally include one or more of:
-
-- A working implementation
-- Tests or validation
-- Clear documentation
-- Complexity analysis for algorithms
-- Refactoring where it improves maintainability
-- A descriptive commit message
+Datasets, trained model weights, credentials, `.env` files and other generated artifacts are excluded where appropriate. Project READMEs explain what must be downloaded or configured locally.
 
 ## 📈 Contribution Philosophy
 
-The goal is **quality and consistency, not artificial GitHub activity**. I do not use empty commits, backdated commits, or meaningless changes to manipulate the contribution graph.
+This repository is intended for **genuine engineering work**. I do not create empty, backdated, or meaningless commits to manipulate GitHub activity.
 
-## 🚀 Current Focus
+## 👨‍💻 About
 
-**Software Development • Python • Java • DSA • AI/ML • Data Analytics • Web Development**
+I'm **Vikas Handage**, an Information Technology graduate from Alliance University, Bengaluru, interested in software development, AI/ML and data-driven applications.
 
-## 👨‍💻 About Me
-
-I'm **Vikas Handage**, an Information Technology graduate from Alliance University, Bengaluru, interested in building practical software and AI-powered solutions.
-
-🔗 [GitHub](https://github.com/Vikas3655v)  
-🔗 [LinkedIn](https://www.linkedin.com/in/vikas-handage)  
-📧 [Email](mailto:vikashandage06@gmail.com)
+🔗 [GitHub](https://github.com/Vikas3655v) • [LinkedIn](https://www.linkedin.com/in/vikas-handage) • [Email](mailto:vikashandage06@gmail.com)
