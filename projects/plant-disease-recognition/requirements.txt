@@ -1,3 +1,5 @@
 tensorflow>=2.16,<3
 numpy>=1.26,<3
 Pillow>=10,<12
+scikit-learn>=1.4,<2
+streamlit>=1.36,<2
