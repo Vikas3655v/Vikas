@@ -1,0 +1,4 @@
+node_id,signal_strength,packet_rate,altitude
+node-01,-42,18,85
+node-02,-91,2,120
+node-03,-70,7,95
