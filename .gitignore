@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ML artifacts
+*.h5
+*.keras
+*.pt
+*.pth
+*.onnx
+models/checkpoints/
+
+# Data
+*.csv
+*.parquet
+*.db
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
