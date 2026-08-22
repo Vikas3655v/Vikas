@@ -1,51 +1,95 @@
 # 🌱 Plant Disease Recognition using Deep Learning
 
-An image-classification pipeline for experimenting with plant disease recognition from leaf images.
+A recruiter-friendly, reproducible image-classification project for recognizing plant diseases from leaf images.
 
-## Workflow
+## 🔎 What the project demonstrates
 
-1. Prepare a directory-based image dataset.
-2. Create training/validation splits with TensorFlow utilities.
-3. Resize and normalize images.
-4. Train a compact CNN baseline.
-5. Evaluate validation performance.
-6. Save the trained model locally and use the prediction script for inference.
+- PlantVillage-style directory dataset workflow
+- MobileNetV2 transfer learning
+- Training/validation split and augmentation
+- Early stopping and best-model checkpointing
+- Accuracy/loss tracking
+- Precision, recall, F1-score and confusion matrix evaluation
+- Saved model/class-label artifacts
+- Interactive Streamlit inference application
 
-## Dataset
-
-Do **not** commit the dataset or trained weights. Place a compatible image dataset locally under `data/` using one directory per class, or adapt the loader to your dataset layout.
-
-Example:
+## 🏗️ Pipeline
 
 ```text
-data/plantvillage/
-├── class_a/
-├── class_b/
-└── class_c/
+Dataset → preprocessing → augmentation → MobileNetV2 → validation
+→ best checkpoint → evaluation → saved model → Streamlit inference
 ```
 
-## Requirements
+## 📁 Structure
+
+```text
+plant-disease-recognition/
+├── data/                 # Dataset downloaded locally; not committed
+├── models/               # Generated model artifacts; ignored by Git
+├── src/
+│   ├── train.py
+│   ├── evaluate.py
+│   ├── predict.py
+│   └── app.py
+├── requirements.txt
+└── README.md
+```
+
+## 📦 Dataset
+
+Download the public **PlantVillage** dataset from Kaggle or its original source. Put the class folders under `data/plantvillage/`. Do not commit the dataset or credentials.
+
+## ⚙️ Install
 
 ```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Train
+## 🧠 Train
 
 ```bash
-python src/train.py --data-dir data/plantvillage --output models/plant_disease.keras
+python src/train.py --data-dir data/plantvillage --output models/plant_disease_mobilenetv2.keras
 ```
 
-## Predict
+## 📊 Evaluate
 
 ```bash
-python src/predict.py --model models/plant_disease.keras --image path/to/leaf.jpg
+python src/evaluate.py --data-dir data/plantvillage --model models/plant_disease_mobilenetv2.keras
 ```
 
-## Evaluation
+The evaluation script produces precision, recall, F1-score and a confusion matrix. **No accuracy or performance number is claimed until the model is actually run.**
 
-The training script reports validation accuracy and loss. Add precision, recall, F1-score and a confusion matrix when running a complete experiment. No performance number is claimed by this repository until the model is actually trained and evaluated.
+## 🔬 Inference
 
-## Limitations
+```bash
+python src/predict.py --model models/plant_disease_mobilenetv2.keras --image path/to/leaf.jpg
+```
 
-A model trained on a controlled dataset may not generalize to field conditions, lighting changes, different cameras, or unseen diseases. This project is for learning and experimentation and should not be treated as an agricultural diagnosis system without further validation.
+## 🌐 Interactive Demo
+
+After training:
+
+```bash
+streamlit run src/app.py
+```
+
+Upload a leaf image to see the predicted class, confidence and top-3 predictions.
+
+## ⚠️ Limitations
+
+Results depend on dataset quality, class balance, image conditions and training configuration. A model trained on controlled images may not generalize to field conditions. This is an educational/research project, not a substitute for professional agricultural diagnosis.
+
+## 🚀 Future Improvements
+
+- Fine-tune the MobileNetV2 backbone
+- Add a held-out test set
+- Add Grad-CAM explanations
+- Track experiments
+- Deploy a validated model
+
+## License
+
+Add the license required by the selected dataset/source before redistribution.
