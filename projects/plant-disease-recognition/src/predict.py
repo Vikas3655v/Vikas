@@ -9,11 +9,9 @@ from pathlib import Path
 import numpy as np
 import tensorflow as tf
 
-IMAGE_SIZE = (160, 160)
-
 
 def load_labels(model_path: Path) -> list[str]:
-    """Load labels from either the JSON or text artifact beside a model."""
+    """Load labels from either the transfer-learning JSON or baseline text file."""
     json_path = model_path.parent / "plant_disease_labels.json"
     text_path = model_path.with_suffix(".labels.txt")
     if json_path.exists():
@@ -21,6 +19,26 @@ def load_labels(model_path: Path) -> list[str]:
     if text_path.exists():
         return text_path.read_text(encoding="utf-8").splitlines()
     raise FileNotFoundError(f"No label file found beside model: {model_path}")
+
+
+def prepare_image(image_path: Path, model: tf.keras.Model) -> np.ndarray:
+    """Prepare an image using the model's expected spatial size and preprocessing."""
+    shape = model.input_shape
+    if not isinstance(shape, tuple) or len(shape) != 4 or shape[1] is None or shape[2] is None:
+        raise ValueError("Model must accept images with a fixed height and width")
+
+    image_size = (int(shape[1]), int(shape[2]))
+    image = tf.keras.utils.load_img(image_path, target_size=image_size)
+    array = tf.keras.utils.img_to_array(image)
+
+    # Transfer-learning model uses MobileNetV2 preprocessing; the small CNN
+    # baseline uses an in-model Rescaling layer, so its raw pixel range is kept.
+    first_layer = model.layers[0]
+    if isinstance(first_layer, tf.keras.layers.InputLayer) and len(model.layers) > 1:
+        first_layer = model.layers[1]
+    if "mobilenet" in model.name.lower() or "mobilenet" in first_layer.name.lower():
+        array = tf.keras.applications.mobilenet_v2.preprocess_input(array)
+    return np.expand_dims(array, axis=0)
 
 
 def main() -> None:
@@ -39,10 +57,7 @@ def main() -> None:
 
     model = tf.keras.models.load_model(args.model)
     labels = load_labels(args.model)
-
-    image = tf.keras.utils.load_img(args.image, target_size=IMAGE_SIZE)
-    array = tf.keras.utils.img_to_array(image) / 255.0
-    probabilities = model.predict(np.expand_dims(array, axis=0), verbose=0)[0]
+    probabilities = model.predict(prepare_image(args.image, model), verbose=0)[0]
     top_indices = np.argsort(probabilities)[::-1][:args.top_k]
 
     print("Predictions:")
