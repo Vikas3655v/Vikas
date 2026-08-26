@@ -16,31 +16,31 @@ RULES = {
 
 
 def load_categories(path: Path) -> Counter[str]:
-    """Load and normalize observed object categories from a detector CSV."""
     with path.open(newline="", encoding="utf-8") as file:
         rows = csv.DictReader(file)
         if not rows.fieldnames or "class" not in rows.fieldnames:
             raise ValueError("Input CSV must contain a 'class' column")
-        return Counter((row.get("class") or "").strip().lower() for row in rows if row.get("class"))
+        return Counter((row["class"] or "").strip().lower() for row in rows if row.get("class"))
 
 
 def build_recommendations(categories: Counter[str]) -> list[dict[str, object]]:
-    """Create explainable recommendations for categories covered by RULES."""
-    return [
-        {
-            "observed_category": category,
-            "observations": count,
-            "recommendation": RULES[category],
-            "reason": "Rule matched to an observed category.",
-        }
-        for category, count in categories.most_common()
-        if category in RULES
-    ]
+    recommendations = []
+    for category, count in categories.most_common():
+        if category in RULES:
+            recommendations.append(
+                {
+                    "observed_category": category,
+                    "observations": count,
+                    "recommendation": RULES[category],
+                    "reason": "Rule matched to an observed category.",
+                }
+            )
+    return recommendations
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--events", type=Path, required=True, help="Detection CSV containing a class column")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--events", type=Path, required=True)
     parser.add_argument("--output", type=Path, default=Path("results/recommendations.json"))
     args = parser.parse_args()
 

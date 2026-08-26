@@ -9,36 +9,27 @@ import numpy as np
 import tensorflow as tf
 from sklearn.metrics import classification_report, confusion_matrix
 
-SEED = 42
+IMAGE_SIZE = (160, 160)
 BATCH_SIZE = 32
+SEED = 42
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=Path, required=True)
     parser.add_argument("--model", type=Path, required=True)
     args = parser.parse_args()
-
-    if not args.data_dir.exists():
-        raise FileNotFoundError(f"Dataset directory not found: {args.data_dir}")
-    if not args.model.exists():
-        raise FileNotFoundError(f"Model not found: {args.model}")
-
-    model = tf.keras.models.load_model(args.model)
-    shape = model.input_shape
-    if not isinstance(shape, tuple) or len(shape) != 4 or shape[1] is None or shape[2] is None:
-        raise ValueError("Model must accept images with a fixed height and width")
-    image_size = (int(shape[1]), int(shape[2]))
 
     dataset = tf.keras.utils.image_dataset_from_directory(
         args.data_dir,
         validation_split=0.2,
         subset="validation",
         seed=SEED,
-        image_size=image_size,
+        image_size=IMAGE_SIZE,
         batch_size=BATCH_SIZE,
         shuffle=False,
     )
+    model = tf.keras.models.load_model(args.model)
 
     labels = dataset.class_names
     y_true = np.concatenate([y.numpy() for _, y in dataset], axis=0)

@@ -8,7 +8,7 @@ venv/
 # Jupyter
 .ipynb_checkpoints/
 
-# ML model artifacts
+# ML artifacts
 *.h5
 *.keras
 *.pt
@@ -16,14 +16,10 @@ venv/
 *.onnx
 models/checkpoints/
 
-# Generated project outputs
-results/
-runs/
-
-# Local datasets and large data files
+# Data
+*.csv
 *.parquet
 *.db
-# Keep intentionally committed small sample CSV files tracked by Git.
 
 # IDE
 .vscode/

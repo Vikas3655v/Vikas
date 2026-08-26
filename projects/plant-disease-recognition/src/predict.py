@@ -1,68 +1,38 @@
-"""Predict a plant image using a saved Keras classifier."""
+"""Predict a plant image using a saved Keras model."""
 
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 
 import numpy as np
 import tensorflow as tf
 
-
-def load_labels(model_path: Path) -> list[str]:
-    """Load labels from either the transfer-learning JSON or baseline text file."""
-    json_path = model_path.parent / "plant_disease_labels.json"
-    text_path = model_path.with_suffix(".labels.txt")
-    if json_path.exists():
-        return json.loads(json_path.read_text(encoding="utf-8"))
-    if text_path.exists():
-        return text_path.read_text(encoding="utf-8").splitlines()
-    raise FileNotFoundError(f"No label file found beside model: {model_path}")
-
-
-def prepare_image(image_path: Path, model: tf.keras.Model) -> np.ndarray:
-    """Prepare an image using the model's expected size and preprocessing."""
-    shape = model.input_shape
-    if not isinstance(shape, tuple) or len(shape) != 4 or shape[1] is None or shape[2] is None:
-        raise ValueError("Model must accept images with a fixed height and width")
-
-    height, width = int(shape[1]), int(shape[2])
-    image = tf.keras.utils.load_img(image_path, target_size=(height, width))
-    array = tf.keras.utils.img_to_array(image)
-
-    # The recommended MobileNetV2 workflow uses 224x224 inputs and expects
-    # MobileNetV2 preprocessing. The 160x160 baseline uses an in-model
-    # Rescaling layer, so its raw pixel range is kept.
-    if (height, width) == (224, 224):
-        array = tf.keras.applications.mobilenet_v2.preprocess_input(array)
-
-    return np.expand_dims(array, axis=0)
+IMAGE_SIZE = (160, 160)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--image", type=Path, required=True)
-    parser.add_argument("--top-k", type=int, default=3)
     args = parser.parse_args()
 
     if not args.model.exists():
         raise FileNotFoundError(f"Model not found: {args.model}")
     if not args.image.exists():
         raise FileNotFoundError(f"Image not found: {args.image}")
-    if args.top_k < 1:
-        parser.error("--top-k must be at least 1")
 
     model = tf.keras.models.load_model(args.model)
-    labels = load_labels(args.model)
-    probabilities = model.predict(prepare_image(args.image, model), verbose=0)[0]
-    top_indices = np.argsort(probabilities)[::-1][:args.top_k]
+    labels_path = args.model.with_suffix(".labels.txt")
+    labels = labels_path.read_text(encoding="utf-8").splitlines()
 
-    print("Predictions:")
-    for index in top_indices:
-        label = labels[int(index)] if int(index) < len(labels) else f"class_{int(index)}"
-        print(f"- {label}: {probabilities[int(index)] * 100:.2f}%")
+    image = tf.keras.utils.load_img(args.image, target_size=IMAGE_SIZE)
+    array = tf.keras.utils.img_to_array(image)
+    probabilities = model.predict(np.expand_dims(array, axis=0), verbose=0)[0]
+    index = int(np.argmax(probabilities))
+
+    print(f"Prediction: {labels[index]}")
+    print(f"Confidence: {probabilities[index]:.4f}")
 
 
 if __name__ == "__main__":

@@ -1,52 +1,43 @@
 # 🌱 Plant Disease Recognition using Deep Learning
 
-A reproducible image-classification project for recognizing plant diseases from leaf images using TensorFlow and transfer learning.
+A recruiter-friendly, reproducible image-classification project for recognizing plant diseases from leaf images.
 
-## ✨ What it demonstrates
+## 🔎 What the project demonstrates
 
 - PlantVillage-style directory dataset workflow
 - MobileNetV2 transfer learning
 - Training/validation split and augmentation
 - Early stopping and best-model checkpointing
-- Saved model and class-label artifacts
-- Precision, recall, F1-score and confusion-matrix evaluation
-- Command-line prediction
-- Interactive Streamlit inference
+- Accuracy/loss tracking
+- Precision, recall, F1-score and confusion matrix evaluation
+- Saved model/class-label artifacts
+- Interactive Streamlit inference application
 
 ## 🏗️ Pipeline
 
 ```text
-Dataset
-  ↓
-Preprocessing + Augmentation
-  ↓
-MobileNetV2 Transfer Learning
-  ↓
-Validation + Best Checkpoint
-  ↓
-Evaluation
-  ↓
-Saved Model + Labels
-  ↓
-CLI / Streamlit Inference
+Dataset → preprocessing → augmentation → MobileNetV2 → validation
+→ best checkpoint → evaluation → saved model → Streamlit inference
 ```
 
 ## 📁 Structure
 
 ```text
 plant-disease-recognition/
-├── data/                       # Local dataset; not committed
-├── models/                     # Generated model artifacts; ignored
+├── data/                 # Dataset downloaded locally; not committed
+├── models/               # Generated model artifacts; ignored by Git
 ├── src/
-│   ├── train_transfer.py       # Recommended training workflow
-│   ├── train.py                # Small CNN baseline
-│   ├── evaluate.py             # Metrics + confusion matrix
-│   ├── predict.py              # CLI inference
-│   └── app.py                  # Streamlit demo
-├── colab_train.py              # Colab guidance
+│   ├── train.py
+│   ├── evaluate.py
+│   ├── predict.py
+│   └── app.py
 ├── requirements.txt
 └── README.md
 ```
+
+## 📦 Dataset
+
+Download the public **PlantVillage** dataset from Kaggle or its original source. Put the class folders under `data/plantvillage/`. Do not commit the dataset or credentials.
 
 ## ⚙️ Install
 
@@ -57,21 +48,11 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## 📦 Dataset
-
-Download a permitted PlantVillage dataset and place the class folders under `data/plantvillage/`. Do not commit the dataset or credentials.
-
-## 🧠 Recommended Training
+## 🧠 Train
 
 ```bash
-python src/train_transfer.py --data-dir data/plantvillage --output-dir models --epochs 8
+python src/train.py --data-dir data/plantvillage --output models/plant_disease_mobilenetv2.keras
 ```
-
-This produces:
-
-- `models/plant_disease_mobilenetv2.keras`
-- `models/plant_disease_labels.json`
-- `models/training_metrics.json`
 
 ## 📊 Evaluate
 
@@ -79,31 +60,36 @@ This produces:
 python src/evaluate.py --data-dir data/plantvillage --model models/plant_disease_mobilenetv2.keras
 ```
 
-No accuracy or performance number is claimed until the model is actually trained and evaluated.
+The evaluation script produces precision, recall, F1-score and a confusion matrix. **No accuracy or performance number is claimed until the model is actually run.**
 
-## 🔬 CLI Inference
+## 🔬 Inference
 
 ```bash
 python src/predict.py --model models/plant_disease_mobilenetv2.keras --image path/to/leaf.jpg
 ```
 
-## 🌐 Streamlit Demo
+## 🌐 Interactive Demo
+
+After training:
 
 ```bash
 streamlit run src/app.py
 ```
 
-Upload a leaf image to see the predicted class, confidence and top predictions.
+Upload a leaf image to see the predicted class, confidence and top-3 predictions.
 
 ## ⚠️ Limitations
 
-Results depend on dataset quality, class balance, image conditions and training configuration. A model trained on controlled images may not generalize to field conditions. This is an educational/research project and not a substitute for professional agricultural diagnosis.
+Results depend on dataset quality, class balance, image conditions and training configuration. A model trained on controlled images may not generalize to field conditions. This is an educational/research project, not a substitute for professional agricultural diagnosis.
 
 ## 🚀 Future Improvements
 
 - Fine-tune the MobileNetV2 backbone
-- Add a fully held-out test set
+- Add a held-out test set
 - Add Grad-CAM explanations
-- Track experiments and datasets
-- Validate the model on field images
-- Deploy only after appropriate model validation
+- Track experiments
+- Deploy a validated model
+
+## License
+
+Add the license required by the selected dataset/source before redistribution.

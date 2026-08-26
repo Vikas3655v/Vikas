@@ -1,4 +1,4 @@
-"""Aggregate retail detection events for simple, non-identifying analytics."""
+"""Simple aggregate analytics for retail detection events."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ from pathlib import Path
 
 
 def load_classes(path: Path) -> Counter[str]:
-    """Read a detector CSV and count normalized object classes."""
     with path.open(newline="", encoding="utf-8") as file:
         reader = csv.DictReader(file)
         if not reader.fieldnames or "class" not in reader.fieldnames:
@@ -18,13 +17,9 @@ def load_classes(path: Path) -> Counter[str]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--events", type=Path, required=True, help="Detection CSV")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--events", type=Path, required=True)
     args = parser.parse_args()
-
-    if not args.events.exists():
-        raise FileNotFoundError(f"Events file not found: {args.events}")
-
     counts = load_classes(args.events)
     print("Observed categories:")
     for name, count in counts.most_common():

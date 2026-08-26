@@ -1,53 +1,42 @@
-# 🛍️ AI-Powered Smart Retail Surveillance & Recommendations
+# 🛍️ AI-Powered Smart Retail Surveillance & Personalized Recommendations
 
-A modular prototype that connects computer-vision detection events with transparent, rule-based recommendations for retail analytics.
+A modular prototype that connects computer-vision detection events with a transparent recommendation layer for retail analytics.
 
-## 🧩 Architecture
+## Architecture
 
 ```text
+Camera / Video
+      ↓
+Object Detection
+      ↓
 Detection Events (CSV)
-        ↓
+      ↓
 Category Aggregation
-        ↓
+      ↓
 Rule-Based Recommendation Engine
-        ↓
-Recommendation Report (JSON)
+      ↓
+Recommendation Report
 ```
 
-The recommendation layer is intentionally **rule-based and explainable**. It does not claim to infer customer identity, demographics, emotions, or purchasing intent.
+The recommendation layer is intentionally **rule-based and explainable** in this version. It does not claim to infer customer identity, demographics, emotions, or purchasing intent.
 
-## ✨ Features
+## Features
 
-- Read object-detection event data
+- Read detection-event data produced by the object-detection project
 - Aggregate observed categories
-- Apply explicit product/category rules
-- Generate an explainable JSON report
-- Keep analytics and recommendation logic separated
+- Apply configurable product/category rules
+- Produce an explainable recommendation report
+- Keep surveillance and recommendation logic separate
 
-## 📁 Structure
-
-```text
-smart-retail-surveillance/
-├── src/
-│   ├── analytics.py           # Category counts
-│   └── recommend.py           # Recommendation engine
-├── results/                   # Generated JSON; ignored by Git
-├── requirements.txt
-└── README.md
-```
-
-## ⚙️ Installation
+## Run
 
 ```bash
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-# Linux/macOS: source .venv/bin/activate
-pip install -r requirements.txt
+python src/recommend.py --events data/detections.csv --output results/recommendations.json
 ```
 
-## 📥 Input
+## Input Format
 
-The detector CSV should contain at least a `class` column:
+The detector CSV should contain at least a `class` column. A minimal example is:
 
 ```csv
 class
@@ -56,37 +45,14 @@ laptop
 person
 ```
 
-Generate the CSV from the [Object Detection project](../object-detection-activity-recognition/):
+## Privacy
 
-```bash
-cd ../object-detection-activity-recognition
-python src/detect.py --source 0 --output results/detections.csv
-```
+This prototype is designed around event-level data. Do not add face recognition, personally identifiable information, or hidden tracking without a clearly defined lawful purpose, appropriate consent/notice, and privacy controls.
 
-Then return to this project and use `../object-detection-activity-recognition/results/detections.csv` as the input file.
+## Future Improvements
 
-## 📊 Analytics
-
-```bash
-python src/analytics.py --events ../object-detection-activity-recognition/results/detections.csv
-```
-
-## 🤖 Recommendations
-
-```bash
-python src/recommend.py \
-  --events ../object-detection-activity-recognition/results/detections.csv \
-  --output results/recommendations.json
-```
-
-## 🔐 Privacy Boundary
-
-This prototype works with event-level data. Do not add face recognition, personally identifiable information, or hidden tracking without a clearly defined lawful purpose, appropriate notice/consent and privacy controls.
-
-## 🚀 Future Improvements
-
-- Add confidence-aware event filtering
-- Add offline evaluation datasets
 - Replace rules with a validated recommendation model
-- Add aggregate, non-identifying dashboards
-- Measure recommendation quality with labelled evaluation data
+- Add offline evaluation datasets
+- Add confidence-aware event filtering
+- Add a dashboard for aggregate, non-identifying analytics
+- Measure recommendation precision/recall using a labelled evaluation set
