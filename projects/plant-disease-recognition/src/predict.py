@@ -22,22 +22,21 @@ def load_labels(model_path: Path) -> list[str]:
 
 
 def prepare_image(image_path: Path, model: tf.keras.Model) -> np.ndarray:
-    """Prepare an image using the model's expected spatial size and preprocessing."""
+    """Prepare an image using the model's expected size and preprocessing."""
     shape = model.input_shape
     if not isinstance(shape, tuple) or len(shape) != 4 or shape[1] is None or shape[2] is None:
         raise ValueError("Model must accept images with a fixed height and width")
 
-    image_size = (int(shape[1]), int(shape[2]))
-    image = tf.keras.utils.load_img(image_path, target_size=image_size)
+    height, width = int(shape[1]), int(shape[2])
+    image = tf.keras.utils.load_img(image_path, target_size=(height, width))
     array = tf.keras.utils.img_to_array(image)
 
-    # Transfer-learning model uses MobileNetV2 preprocessing; the small CNN
-    # baseline uses an in-model Rescaling layer, so its raw pixel range is kept.
-    first_layer = model.layers[0]
-    if isinstance(first_layer, tf.keras.layers.InputLayer) and len(model.layers) > 1:
-        first_layer = model.layers[1]
-    if "mobilenet" in model.name.lower() or "mobilenet" in first_layer.name.lower():
+    # The recommended MobileNetV2 workflow uses 224x224 inputs and expects
+    # MobileNetV2 preprocessing. The 160x160 baseline uses an in-model
+    # Rescaling layer, so its raw pixel range is kept.
+    if (height, width) == (224, 224):
         array = tf.keras.applications.mobilenet_v2.preprocess_input(array)
+
     return np.expand_dims(array, axis=0)
 
 
