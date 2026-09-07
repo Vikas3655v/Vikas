@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 .venv/
+.venv-detector/
 venv/
 .env
 
@@ -20,6 +21,11 @@ models/checkpoints/
 *.csv
 *.parquet
 *.db
+
+# Local generated/demo files
+projects/smart-retail-surveillance/frontend/node_modules/
+projects/smart-retail-surveillance/bus.jpg
+projects/smart-retail-surveillance/backend/requirements-full.txt
 
 # IDE
 .vscode/
