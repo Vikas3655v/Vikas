@@ -1,23 +1,27 @@
 # Smart Retail Surveillance — Full-Stack Edition
 
-This enhancement turns the original event-processing prototype into a clearer full-stack portfolio project while preserving the privacy-first, explainable recommendation design.
+This enhancement turns the original event-processing prototype into a full-stack portfolio project with a live YOLO event pipeline, analytics API, React dashboard, benchmark utility, and optional MySQL persistence.
 
 ## Stack
 
 - Frontend: React.js, JavaScript, HTML5, CSS3, Vite
-- Backend/AI: Python, OpenCV/YOLO detection pipeline, NumPy/Pandas-compatible analytics, rule-based recommendations
-- Data: CSV event data and JSON API responses; MySQL is an optional production persistence layer and is not required by the current local implementation
+- Backend/AI: Python, Flask, OpenCV, Ultralytics YOLO, Pandas, rule-based recommendations
+- Data: CSV/JSON locally; MySQL persistence schema for production
 - DevOps: Git, GitHub, VS Code, Python venv, Docker Compose, GitHub Actions
 
 ## Architecture
 
-Camera/video → YOLO/OpenCV detector → CSV events → Python analytics API → React dashboard → explainable recommendations
+Camera/video → YOLO/OpenCV live detector → CSV events → Flask analytics API → React dashboard → explainable recommendations
 
-The existing recommendation engine remains rule-based and transparent. It does not infer identity, demographics, emotions, or purchasing intent. The dashboard exposes aggregate event-level analytics only.
+Optional production path:
 
-## Quick demo with included sample data
+CSV/events → MySQL `detection_events` → analytics API → React dashboard
 
-The repository includes `data/sample_detections.csv`, so the dashboard can be demonstrated immediately without a camera. To use it:
+The recommendation engine remains rule-based and transparent. It does not infer identity, demographics, emotions, or purchasing intent.
+
+## 1. Quick demo with sample data
+
+From `projects/smart-retail-surveillance`:
 
 ```bash
 python -m venv .venv
@@ -29,7 +33,7 @@ set RETAIL_EVENTS=data/sample_detections.csv
 PYTHONPATH=. python backend/app.py
 ```
 
-Then, in a second terminal:
+In a second terminal:
 
 ```bash
 cd frontend
@@ -37,36 +41,67 @@ npm install
 npm run dev
 ```
 
-Open the Vite URL shown in the terminal (normally `http://localhost:5173`).
+Open the Vite URL (normally `http://localhost:5173`).
 
-## Backend
+## 2. Live YOLO camera mode
 
-Start from the project directory. The API exposes:
+The live detector is `backend/live_detector.py`. It opens a webcam, runs YOLO inference, displays annotated frames, and appends event rows to a CSV.
+
+```bash
+# from projects/smart-retail-surveillance
+PYTHONPATH=. python backend/live_detector.py --source 0 --output data/detections.csv
+```
+
+Press **q** in the detector window to stop it. Start the Flask API against the same CSV in another terminal:
+
+```bash
+set RETAIL_EVENTS=data/detections.csv
+# macOS/Linux: export RETAIL_EVENTS=data/detections.csv
+PYTHONPATH=. python backend/app.py
+```
+
+Then refresh the React dashboard. The dashboard reads the current event file through the API.
+
+## 3. API
 
 - `GET /api/health` — service health
 - `GET /api/analytics` — total events, unique categories, average confidence, category counts and recommendations
-- `GET /api/events?limit=100` — event rows for inspection
+- `GET /api/events?limit=100` — event rows
 - `GET /api/recommendations` — recommendation output
 
-Set `RETAIL_EVENTS` to point to a different CSV file. The default remains `data/detections.csv` for compatibility with the object detector pipeline.
+## 4. Performance benchmark
 
-## Frontend
+Run:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+PYTHONPATH=. python benchmark.py --events data/sample_detections.csv
 ```
 
-Set `VITE_API_URL` if the backend is not running at `http://localhost:5000`.
+This measures CSV load time, event throughput, and average detection confidence. For true YOLO FPS/latency benchmarking, run the live detector on the target machine because inference speed depends on the hardware and model.
 
-## Automated tests
+## 5. MySQL persistence
 
-Run the backend analytics test from the project directory:
+The `mysql/schema.sql` file creates the production event table with indexes on timestamp and class. The local demo intentionally remains credential-free and CSV-based.
+
+```text
+mysql/schema.sql
+    ↓
+smart_retail.detection_events
+    ↓
+future database-backed API
+    ↓
+React dashboard
+```
+
+## 6. Tests and CI
+
+Run the backend unit tests:
 
 ```bash
 PYTHONPATH=. python -m unittest backend.test_app
 ```
+
+GitHub Actions compiles the Python modules and builds the React frontend for changes to this project. The workflow is defined in `.github/workflows/smart-retail-ci.yml`.
 
 ## Docker Compose
 
@@ -74,18 +109,4 @@ PYTHONPATH=. python -m unittest backend.test_app
 docker compose up
 ```
 
-The React development server runs on port 5173 and the Python API on port 5000.
-
-## CI/CD quality gate
-
-`.github/workflows/smart-retail-ci.yml` automatically compiles the Python modules and builds the React frontend on pushes and pull requests that modify this project. The same workflow is the project's automated build gate; live workflow execution depends on the branch being pushed to a GitHub-enabled Actions environment.
-
-## MySQL integration path
-
-For a production deployment, MySQL can replace CSV as the persistent event store. A recommended schema is:
-
-- `detection_events(id, timestamp, class_name, confidence, x1, y1, x2, y2)`
-- indexes on `timestamp` and `class_name`
-- aggregate queries for dashboard metrics
-
-The current implementation deliberately keeps CSV as the portable local source of truth so the project remains easy to run without credentials or external services.
+The development frontend runs on port 5173 and the API on port 5000.
