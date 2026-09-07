@@ -1,12 +1,42 @@
 services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: smart_retail
+      MYSQL_USER: smart_retail
+      MYSQL_PASSWORD: smart_retail
+      MYSQL_ROOT_PASSWORD: root_smart_retail
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_smart_retail"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   backend:
     image: python:3.12-slim
     working_dir: /app
     volumes:
       - ./:/app
+    environment:
+      STORAGE_BACKEND: mysql
+      RETAIL_EVENTS: data/detections.csv
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: smart_retail
+      MYSQL_USER: smart_retail
+      MYSQL_PASSWORD: smart_retail
     command: sh -c "pip install -r backend/requirements.txt && PYTHONPATH=. python backend/app.py"
     ports:
       - "5000:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
   frontend:
     image: node:22-alpine
     working_dir: /app
@@ -17,3 +47,6 @@ services:
       - "5173:5173"
     depends_on:
       - backend
+
+volumes:
+  mysql_data:
