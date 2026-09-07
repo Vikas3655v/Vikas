@@ -34,3 +34,9 @@ projects/smart-retail-surveillance/backend/requirements-full.txt
 # OS
 .DS_Store
 Thumbs.db
+
+# Smart Retail local/generated files
+projects/smart-retail-surveillance/.venv-detector/
+projects/smart-retail-surveillance/frontend/node_modules/
+projects/smart-retail-surveillance/bus.jpg
+projects/smart-retail-surveillance/backend/requirements-full.txt
