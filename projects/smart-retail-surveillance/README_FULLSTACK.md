@@ -1,130 +1,177 @@
 # Smart Retail Surveillance — Full-Stack Edition
 
-This is a full-stack AI retail application with live YOLO detection, CSV event capture, a Flask analytics API, a React dashboard, benchmarking, and MySQL persistence.
+A full-stack AI retail analytics application with live YOLO object detection, MySQL persistence, a Flask analytics API, a React/Vite dashboard, explainable recommendations, and Docker Compose for local development.
 
-## Stack
+## What is working
 
-- Frontend: React.js, JavaScript, HTML5, CSS3, Vite
-- Backend/AI: Python, Flask, OpenCV, Ultralytics YOLO, Pandas, rule-based recommendations
-- Data: CSV for capture/import; MySQL for persistent production-style storage
-- DevOps: Git, GitHub, VS Code, Python venv, Docker Compose, GitHub Actions
+- React/Vite dashboard on `http://localhost:5173`
+- Flask API on `http://localhost:5000`
+- MySQL 8.4 in Docker, published to host port `3307`
+- MySQL-backed `/api/health`, `/api/analytics`, `/api/events`, and `/api/recommendations`
+- Sample detection data stored in `detection_events`
+- Live YOLO11n + OpenCV detector on the Windows host using CPU PyTorch
+- Detector can write either CSV events or live events directly to MySQL
+- Explainable, rule-based retail recommendations
 
 ## Architecture
 
-Camera/video → YOLO/OpenCV live detector → CSV events → MySQL ingestion → Flask analytics API → React dashboard → explainable recommendations
-
-The recommendation engine remains rule-based and transparent. It does not infer identity, demographics, emotions, or purchasing intent.
-
-## 1. Quick CSV demo
-
-```bash
-python -m venv .venv
-# Windows: .venv\\Scripts\\activate
-# macOS/Linux: source .venv/bin/activate
-pip install -r backend/requirements.txt
-set RETAIL_EVENTS=data/sample_detections.csv
-# macOS/Linux: export RETAIL_EVENTS=data/sample_detections.csv
-PYTHONPATH=. python backend/app.py
+```text
+Windows webcam
+     ↓
+YOLO11n + OpenCV (CPU)
+     ↓
+Detection events
+     ├── CSV mode → data/detections.csv
+     └── MySQL mode → MySQL detection_events
+                         ↓
+                    Flask API :5000
+                         ↓
+                    React :5173
 ```
 
-Then run the frontend:
+The detector is intentionally kept outside the Flask Docker container. This keeps the API container lightweight and avoids pulling the large CUDA/NVIDIA dependency stack into the web service. CPU-only PyTorch is used for the Windows detector.
+
+## 1. Docker full-stack setup
+
+From `projects/smart-retail-surveillance`:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+docker compose up -d
 ```
 
-## 2. Live YOLO mode
+Services:
 
-From the project directory:
+- MySQL: host `3307` → container `3306`
+- Flask API: `5000`
+- React/Vite: `5173`
+
+Check status:
 
 ```bash
-PYTHONPATH=. python backend/live_detector.py --source 0 --output data/detections.csv
+docker compose ps
 ```
 
-Press **q** to stop the camera. The detector writes timestamp, class, confidence, and bounding-box coordinates into the CSV.
-
-## 3. MySQL-backed application
-
-The application now supports `STORAGE_BACKEND=mysql`. The API reads events from MySQL instead of CSV when this mode is enabled.
-
-### Option A — Docker Compose (recommended)
-
-From this directory:
-
-```bash
-docker compose up
-```
-
-This starts:
-
-- MySQL on port `3306`
-- Flask API on port `5000`
-- React/Vite on port `5173`
-
-The MySQL container initializes `mysql/schema.sql` automatically.
-
-### Import the detector CSV into MySQL
-
-After MySQL and the API are running, call:
-
-```bash
-curl -X POST http://localhost:5000/api/import-csv
-```
-
-The API reads `RETAIL_EVENTS` and inserts the event rows into `detection_events`.
-
-### Verify MySQL-backed analytics
+Health check:
 
 ```bash
 curl http://localhost:5000/api/health
-curl http://localhost:5000/api/analytics
-curl http://localhost:5000/api/events?limit=100
 ```
 
-`/api/health` reports `storage=mysql` and the database connection state. The analytics, events, and recommendation endpoints now read from MySQL in this mode.
+PowerShell:
 
-## 4. Environment configuration
-
-Copy `.env.example` values into your environment. Important variables:
-
-```text
-STORAGE_BACKEND=mysql
-RETAIL_EVENTS=data/detections.csv
-MYSQL_HOST=127.0.0.1
-MYSQL_PORT=3306
-MYSQL_DATABASE=smart_retail
-MYSQL_USER=smart_retail
-MYSQL_PASSWORD=smart_retail
-MYSQL_POOL_SIZE=5
+```powershell
+Invoke-RestMethod http://localhost:5000/api/health
 ```
 
-Do not commit real production database passwords or credentials.
+The expected health response reports `status=ok`, `service=smart-retail-api`, `storage=mysql`, and `database=connected`.
 
-## 5. Performance benchmark
+## 2. Verify MySQL data
+
+The database schema is in `mysql/schema.sql`.
 
 ```bash
-PYTHONPATH=. python benchmark.py --events data/sample_detections.csv
+docker compose exec mysql mysql -usmart_retail -psmart_retail -e "USE smart_retail; SELECT COUNT(*) AS total_events FROM detection_events;"
 ```
 
-This measures CSV load time, event throughput, and average detection confidence. True YOLO FPS/latency should be measured on the target machine because it depends on hardware and model configuration.
+The sample environment used during development contains 8 events: laptop ×3, cell phone ×2, book ×2, and mouse ×1.
 
-## 6. API
+## 3. API endpoints
 
-- `GET /api/health` — API and storage health
-- `GET /api/analytics` — aggregate analytics and recommendations
-- `GET /api/events?limit=100` — event rows
-- `GET /api/recommendations` — explainable recommendation output
-- `POST /api/import-csv` — import the configured CSV into MySQL; requires `STORAGE_BACKEND=mysql`
+- `GET /api/health` — API and database health
+- `GET /api/analytics` — aggregate event counts, confidence and recommendations
+- `GET /api/events?limit=100` — detection events
+- `GET /api/recommendations` — explainable recommendations
+- `POST /api/import-csv` — import the configured CSV into MySQL
 
-## 7. Tests and CI
+Example:
+
+```powershell
+Invoke-RestMethod http://localhost:5000/api/events
+```
+
+## 4. Windows YOLO detector
+
+The Flask Docker requirements intentionally do **not** install Ultralytics/OpenCV. Install detector dependencies into a separate Windows virtual environment:
+
+```powershell
+python -m venv .venv-detector
+.\.venv-detector\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements-detector.txt
+```
+
+The detector requirements use the CPU-only PyTorch wheel index. No NVIDIA CUDA runtime is required for the default CPU setup.
+
+Verify:
+
+```powershell
+python -c "import torch; print(torch.__version__); print('CUDA:', torch.cuda.is_available())"
+python -c "from ultralytics import YOLO; print('YOLO OK')"
+python -c "import cv2; print('OpenCV:', cv2.__version__)"
+```
+
+The first YOLO run downloads `yolo11n.pt` automatically if the model file is not already available.
+
+### Live camera → MySQL
+
+Make sure Docker MySQL is running, then run from the project root:
+
+```powershell
+.\.venv-detector\Scripts\Activate.ps1
+python backend\live_detector.py --source 0 --storage mysql --mysql-host 127.0.0.1 --mysql-port 3307 --device cpu --confidence 0.4
+```
+
+The detector opens a window named `Smart Retail - YOLO Live Detection`. Press **Q** in that window to stop it.
+
+Every detection batch is written to MySQL at most once per second by default. Use `--persist-every` to change this interval.
+
+### CSV mode
+
+To keep the original CSV workflow:
+
+```powershell
+python backend\live_detector.py --source 0 --storage csv --output data\detections.csv --device cpu
+```
+
+## 5. Detector options
+
+```text
+--source          Webcam index or video path (default: 0)
+--model           YOLO model (default: yolo11n.pt)
+--confidence      Minimum detection confidence (default: 0.4)
+--device          Inference device (default: cpu)
+--storage         mysql or csv (default: mysql)
+--persist-every   Seconds between MySQL writes (default: 1.0)
+--mysql-host      MySQL host (default: 127.0.0.1)
+--mysql-port      MySQL host port (default: 3307)
+--mysql-database  Database name
+--mysql-user      Database user
+--mysql-password  Database password
+```
+
+For a camera with poor lighting or small objects, try a lower threshold such as `--confidence 0.20`. Lower thresholds can increase detections but may also increase false positives.
+
+## 6. Development notes
+
+The backend uses a lightweight `backend/requirements.txt` containing Flask, CORS, Pandas, scikit-learn and MySQL Connector/Python. YOLO/OpenCV dependencies are isolated in `requirements-detector.txt` so Docker startup does not pull the large CUDA/NVIDIA dependency stack.
+
+Do not run `docker compose down -v` unless you intentionally want to delete the MySQL volume and its stored data.
+
+Do not repeatedly import the same CSV into MySQL unless duplicate event rows are intended.
+
+## 7. Tests
 
 ```bash
 PYTHONPATH=. python -m unittest backend.test_app
 ```
 
-GitHub Actions compiles the Python modules and builds the React frontend for project changes.
+For a quick API smoke test:
+
+```powershell
+Invoke-RestMethod http://localhost:5000/api/health
+Invoke-RestMethod http://localhost:5000/api/events
+Invoke-RestMethod http://localhost:5000/api/analytics
+```
 
 ## Privacy
 
