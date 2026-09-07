@@ -1,10 +1,4 @@
-"""REST API for aggregate smart-retail analytics.
-
-The API is intentionally event-level and non-identifying. It reads the same
-CSV detection-event format produced by the object detector and exposes
-aggregate analytics and explainable recommendations for the React dashboard.
-"""
-
+"""REST API for Smart Retail analytics with CSV and optional MySQL storage."""
 from __future__ import annotations
 
 import csv
@@ -19,11 +13,10 @@ from src.recommend import build_recommendations
 
 app = Flask(__name__)
 CORS(app)
-
 DEFAULT_EVENTS = Path(os.getenv("RETAIL_EVENTS", "data/detections.csv"))
 
 
-def load_events(path: Path) -> list[dict[str, str]]:
+def load_events(path: Path) -> list[dict]:
     if not path.exists():
         return []
     with path.open(newline="", encoding="utf-8") as file:
@@ -33,15 +26,14 @@ def load_events(path: Path) -> list[dict[str, str]]:
         return [row for row in reader if row.get("class")]
 
 
-def summarize(events: list[dict[str, str]]) -> dict:
+def summarize(events: list[dict]) -> dict:
     categories = Counter((row.get("class") or "").strip().lower() for row in events)
     confidences = []
     for row in events:
         try:
             confidences.append(float(row.get("confidence", "")))
-        except ValueError:
+        except (ValueError, TypeError):
             continue
-
     return {
         "total_events": len(events),
         "unique_categories": len(categories),
@@ -51,43 +43,75 @@ def summarize(events: list[dict[str, str]]) -> dict:
     }
 
 
-def events_path() -> Path:
-    requested = request.args.get("events")
-    return Path(requested) if requested else DEFAULT_EVENTS
+def mysql_enabled() -> bool:
+    return os.getenv("STORAGE_BACKEND", "csv").lower() == "mysql"
+
+
+def get_store():
+    from backend.mysql_store import MySQLStore
+    return MySQLStore()
+
+
+def current_events() -> list[dict]:
+    if mysql_enabled():
+        return get_store().fetch_events(min(max(request.args.get("limit", 1000, type=int), 1), 1000))
+    return load_events(DEFAULT_EVENTS)
 
 
 @app.get("/api/health")
 def health():
-    return jsonify({"status": "ok", "service": "smart-retail-api"})
+    payload = {"status": "ok", "service": "smart-retail-api", "storage": "mysql" if mysql_enabled() else "csv"}
+    if mysql_enabled():
+        try:
+            store = get_store()
+            connection = store.connection()
+            connection.close()
+            payload["database"] = "connected"
+        except Exception as exc:
+            payload["status"] = "degraded"
+            payload["database"] = "unavailable"
+            payload["database_error"] = str(exc)
+    return jsonify(payload)
 
 
 @app.get("/api/analytics")
 def analytics():
     try:
-        events = load_events(events_path())
-        return jsonify(summarize(events))
-    except (OSError, ValueError) as exc:
+        return jsonify(summarize(current_events()))
+    except Exception as exc:
         return jsonify({"error": str(exc)}), 400
 
 
 @app.get("/api/events")
 def event_rows():
     try:
-        events = load_events(events_path())
+        events = current_events()
         limit = min(max(request.args.get("limit", 100, type=int), 1), 1000)
         return jsonify({"count": len(events), "events": events[:limit]})
-    except (OSError, ValueError) as exc:
+    except Exception as exc:
         return jsonify({"error": str(exc)}), 400
 
 
 @app.get("/api/recommendations")
 def recommendations():
     try:
-        events = load_events(events_path())
+        events = current_events()
         categories = Counter((row.get("class") or "").strip().lower() for row in events)
         return jsonify({"recommendations": build_recommendations(categories)})
-    except (OSError, ValueError) as exc:
+    except Exception as exc:
         return jsonify({"error": str(exc)}), 400
+
+
+@app.post("/api/import-csv")
+def import_csv():
+    if not mysql_enabled():
+        return jsonify({"error": "Set STORAGE_BACKEND=mysql before importing into MySQL"}), 400
+    try:
+        events = load_events(DEFAULT_EVENTS)
+        inserted = get_store().insert_events(events)
+        return jsonify({"inserted": inserted, "source": str(DEFAULT_EVENTS), "storage": "mysql"})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 if __name__ == "__main__":
